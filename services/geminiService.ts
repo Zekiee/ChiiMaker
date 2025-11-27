@@ -71,7 +71,7 @@ const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacte
     }
   });
 
-  if (!response.text) throw new Error("Failed to generate script");
+  if (!response.text) throw new Error("无法生成脚本");
   return JSON.parse(response.text) as ScriptPanel[];
 };
 
@@ -123,7 +123,7 @@ const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], ch
     }
   }
 
-  if (!imageUrl) throw new Error(`Failed to generate comic strip image`);
+  if (!imageUrl) throw new Error(`无法生成漫画图片`);
 
   return {
     panelNumber: 1, // Represents the whole strip
@@ -162,6 +162,6 @@ export const generateChiikawaStory = async (
 
   } catch (error) {
     console.error("Gemini Story Generation Error:", error);
-    return { error: error instanceof Error ? error.message : 'Unknown error occurred' };
+    return { error: error instanceof Error ? error.message : '发生未知错误' };
   }
 };

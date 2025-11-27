@@ -72,7 +72,7 @@ const App: React.FC = () => {
 
     setIsGenerating(true);
     setError(null);
-    setLoadingStage('Writing Story...');
+    setLoadingStage('正在构思故事...');
 
     try {
       // Small delay to let UI update
@@ -80,12 +80,12 @@ const App: React.FC = () => {
       
       const response = await generateChiikawaStory(prompt, selectedCharacters);
       
-      setLoadingStage('Drawing Panels...');
+      setLoadingStage('正在绘制漫画...');
 
       if (response.error) {
         if (response.error.includes("Requested entity was not found")) {
             setHasApiKey(false);
-            setError("Session expired or invalid key. Please select your API key again.");
+            setError("会话已过期或密钥无效，请重新选择 API 密钥。");
         } else {
             setError(response.error);
         }
@@ -94,7 +94,7 @@ const App: React.FC = () => {
         setPrompt(''); 
       }
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("出错了，请重试。");
     } finally {
       setIsGenerating(false);
       setLoadingStage('');
@@ -102,7 +102,7 @@ const App: React.FC = () => {
   };
 
   const handleRemoveStory = (id: string) => {
-    if (window.confirm("Delete this comic strip?")) {
+    if (window.confirm("确定要删除这篇漫画吗？")) {
       setStories(prev => prev.filter(s => s.id !== id));
     }
   };
@@ -112,17 +112,17 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
             <div className="text-6xl mb-6 animate-bounce-slow">✨</div>
-            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa Maker</h1>
+            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
             <p className="text-gray-500 mb-8">
-              To use the high-quality <b>Gemini 3 Pro</b> models for story and art generation, please select a paid API key.
+              为了使用高质量的 <b>Gemini 3 Pro</b> 模型生成故事和漫画，请选择付费 API 密钥。
             </p>
             <Button onClick={handleSelectKey} className="w-full justify-center">
               <KeyRound size={20} />
-              Select API Key
+              选择 API 密钥
             </Button>
             <div className="mt-6 text-xs text-gray-400">
                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">
-                 Billing Information
+                 计费说明
                </a>
             </div>
          </div>
@@ -140,7 +140,7 @@ const App: React.FC = () => {
               🍥
             </div>
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-chiikawa-pink tracking-tight">
-              ChiiMaker
+              Chiikawa 漫画机
             </h1>
           </div>
           <div className="hidden md:flex items-center text-xs font-bold text-chiikawa-blue bg-blue-50 px-3 py-1 rounded-full border border-chiikawa-blue gap-2">
@@ -155,10 +155,10 @@ const App: React.FC = () => {
         {/* Intro */}
         <div className="text-center mb-8 max-w-2xl">
           <h2 className="text-4xl font-serif mb-2 text-chiikawa-dark">
-            4-Panel Comic Generator
+            四格漫画生成器
           </h2>
           <p className="text-lg text-gray-500 font-medium">
-            Pick characters, describe a situation, and let AI write & draw the manga!
+            选择角色，描述剧情，让 AI 为你创作专属漫画！
           </p>
         </div>
 
@@ -172,12 +172,12 @@ const App: React.FC = () => {
           
           <div className="relative mb-6">
             <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">
-              Story Idea / Scenario
+              故事创意 / 剧情场景
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`e.g. Chiikawa and Hachiware find a strange button in the forest. When they press it, something funny happens.`}
+              placeholder={`例如：吉伊卡哇和小八在森林里发现了一个奇怪的按钮，按下后发生了有趣的事情。`}
               className="w-full p-6 bg-chiikawa-bg border-4 border-transparent focus:border-chiikawa-pink rounded-2xl text-lg outline-none transition-all placeholder-gray-300 resize-none min-h-[120px] shadow-inner"
               maxLength={400}
             />
@@ -185,7 +185,7 @@ const App: React.FC = () => {
 
           <div className="flex flex-col md:flex-row items-center gap-4 justify-between">
             <div className="text-sm text-gray-400 italic order-2 md:order-1 flex gap-2 items-center">
-              <span>{loadingStage ? loadingStage : "Ready to create!"}</span>
+              <span>{loadingStage ? loadingStage : "准备开始创作！"}</span>
               {isGenerating && <span className="animate-spin">🍥</span>}
             </div>
             
@@ -195,10 +195,10 @@ const App: React.FC = () => {
               disabled={!prompt.trim() || selectedCharacters.length === 0}
               className="w-full md:w-auto min-w-[200px] text-lg order-1 md:order-2"
             >
-              {isGenerating ? 'Making Magic...' : (
+              {isGenerating ? '正在施法...' : (
                 <>
                   <Wand2 size={20} />
-                  Generate Comic
+                  生成漫画
                 </>
               )}
             </Button>
@@ -216,7 +216,7 @@ const App: React.FC = () => {
            {stories.length === 0 && !isGenerating && (
              <div className="opacity-40 flex flex-col items-center">
                <div className="text-6xl mb-4 grayscale">✏️</div>
-               <p className="font-serif">No comics yet. Start writing!</p>
+               <p className="font-serif">还没有漫画，快去创作吧！</p>
              </div>
            )}
 

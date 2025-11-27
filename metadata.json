@@ -1,5 +1,5 @@
 {
-  "name": "Chiikawa Comic Maker",
-  "description": "Create your own cute, chaotic, and hand-drawn style comics using AI. Generate panels, arrange stories, and embrace the kawaii vibes.",
+  "name": "Chiikawa 漫画生成器",
+  "description": "使用 AI 创作可爱的 Chiikawa 风格四格漫画。自动生成剧情、分镜和对话，感受吉伊卡哇的可爱氛围。",
   "requestFramePermissions": []
 }

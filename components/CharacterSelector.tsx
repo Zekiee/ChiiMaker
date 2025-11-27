@@ -9,18 +9,18 @@ interface CharacterSelectorProps {
 
 export const CharacterSelector: React.FC<CharacterSelectorProps> = ({ selectedCharacters, onToggle }) => {
   const characters = [
-    { type: ChiikawaCharacter.CHIIKAWA, label: 'Chiikawa', color: 'bg-white' },
-    { type: ChiikawaCharacter.HACHIWARE, label: 'Hachiware', color: 'bg-blue-50' },
-    { type: ChiikawaCharacter.USAGI, label: 'Usagi', color: 'bg-yellow-50' },
-    { type: ChiikawaCharacter.MOMONGA, label: 'Momonga', color: 'bg-pink-50' },
-    { type: ChiikawaCharacter.KURIMANJU, label: 'Kurimanju', color: 'bg-orange-50' },
-    { type: ChiikawaCharacter.RAKKO, label: 'Rakko', color: 'bg-red-50' },
+    { type: ChiikawaCharacter.CHIIKAWA, label: '吉伊卡哇', color: 'bg-white' },
+    { type: ChiikawaCharacter.HACHIWARE, label: '哈奇那', color: 'bg-blue-50' },
+    { type: ChiikawaCharacter.USAGI, label: '乌萨奇', color: 'bg-yellow-50' },
+    { type: ChiikawaCharacter.MOMONGA, label: '飞鼠', color: 'bg-pink-50' },
+    { type: ChiikawaCharacter.KURIMANJU, label: '栗子馒头', color: 'bg-orange-50' },
+    { type: ChiikawaCharacter.RAKKO, label: '海獭', color: 'bg-red-50' },
   ];
 
   return (
     <div className="mb-6">
       <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">
-        Select Main Characters (Pick at least 1)
+        选择主角 (至少选一个)
       </label>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {characters.map((char) => {
