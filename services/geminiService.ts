@@ -134,11 +134,12 @@ const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], ch
 };
 
 export const generateChiikawaStory = async (
+  apiKey: string,
   userPrompt: string, 
   characters: ChiikawaCharacter[]
 ): Promise<GeminiResponse> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     // 1. Generate Script
     const script = await generateComicScript(ai, characters, userPrompt);

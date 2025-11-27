@@ -4,57 +4,57 @@ import { ChiikawaCharacter, ComicStory } from './types';
 import { CharacterSelector } from './components/CharacterSelector';
 import { ComicStrip } from './components/ComicStrip';
 import { Button } from './components/Button';
-import { Wand2, KeyRound, Eraser, Sparkles } from 'lucide-react';
+import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedCharacters, setSelectedCharacters] = useState<ChiikawaCharacter[]>([ChiikawaCharacter.CHIIKAWA]);
   
-  // Store a list of stories instead of single panels
+  // Store a list of stories
   const [stories, setStories] = useState<ComicStory[]>([]);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>(''); // For feedback text
   const [error, setError] = useState<string | null>(null);
-  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // API Key State
+  const [apiKey, setApiKey] = useState<string>('');
+  const [tempApiKey, setTempApiKey] = useState('');
 
+  // Load API key and stories on mount
   useEffect(() => {
-    const checkKey = async () => {
-      // @ts-ignore
-      if (window.aistudio && window.aistudio.hasSelectedApiKey) {
-        // @ts-ignore
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setHasApiKey(hasKey);
-      } else {
-        setHasApiKey(true);
-      }
-    };
-    checkKey();
-  }, []);
+    const storedKey = localStorage.getItem('chiikawa_api_key');
+    if (storedKey) setApiKey(storedKey);
 
-  const handleSelectKey = async () => {
-    // @ts-ignore
-    if (window.aistudio && window.aistudio.openSelectKey) {
-       // @ts-ignore
-       await window.aistudio.openSelectKey();
-       setHasApiKey(true);
-    }
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('chiikawa-stories');
-    if (saved) {
+    const savedStories = localStorage.getItem('chiikawa-stories');
+    if (savedStories) {
       try {
-        setStories(JSON.parse(saved));
+        setStories(JSON.parse(savedStories));
       } catch (e) {
         console.error("Failed to parse saved stories");
       }
     }
   }, []);
 
+  // Persist stories
   useEffect(() => {
     localStorage.setItem('chiikawa-stories', JSON.stringify(stories));
   }, [stories]);
+
+  const handleSaveKey = () => {
+    if (tempApiKey.trim()) {
+      localStorage.setItem('chiikawa_api_key', tempApiKey.trim());
+      setApiKey(tempApiKey.trim());
+      setTempApiKey('');
+    }
+  };
+
+  const handleClearKey = () => {
+    if (window.confirm("确定要移除 API 密钥吗？")) {
+      localStorage.removeItem('chiikawa_api_key');
+      setApiKey('');
+    }
+  };
 
   const toggleCharacter = (char: ChiikawaCharacter) => {
     setSelectedCharacters(prev => {
@@ -78,17 +78,12 @@ const App: React.FC = () => {
       // Small delay to let UI update
       await new Promise(r => setTimeout(r, 100));
       
-      const response = await generateChiikawaStory(prompt, selectedCharacters);
+      const response = await generateChiikawaStory(apiKey, prompt, selectedCharacters);
       
       setLoadingStage('正在绘制漫画...');
 
       if (response.error) {
-        if (response.error.includes("Requested entity was not found")) {
-            setHasApiKey(false);
-            setError("会话已过期或密钥无效，请重新选择 API 密钥。");
-        } else {
-            setError(response.error);
-        }
+        setError(response.error);
       } else if (response.story) {
         setStories(prev => [response.story!, ...prev]);
         setPrompt(''); 
@@ -107,23 +102,32 @@ const App: React.FC = () => {
     }
   };
 
-  if (!hasApiKey) {
+  if (!apiKey) {
     return (
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
             <div className="text-6xl mb-6 animate-bounce-slow">✨</div>
             <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
             <p className="text-gray-500 mb-8">
-              为了使用高质量的 <b>Gemini 3 Pro</b> 模型生成故事和漫画，请选择付费 API 密钥。
+              请输入您的 Gemini API Key 以开始创作。<br/>
+              <span className="text-xs">我们不会上传您的密钥，仅存储在本地浏览器中。</span>
             </p>
-            <Button onClick={handleSelectKey} className="w-full justify-center">
-              <KeyRound size={20} />
-              选择 API 密钥
-            </Button>
+            
+            <div className="flex flex-col gap-4">
+              <input 
+                type="password" 
+                placeholder="在此粘贴 API Key..." 
+                className="w-full p-4 border-2 border-chiikawa-blue/30 rounded-xl outline-none focus:border-chiikawa-pink transition-colors text-center"
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+              />
+              <Button onClick={handleSaveKey} disabled={!tempApiKey.trim()} className="w-full justify-center">
+                开始使用 <ArrowRight size={18} />
+              </Button>
+            </div>
+
             <div className="mt-6 text-xs text-gray-400">
-               <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">
-                 计费说明
-               </a>
+               还没有 Key? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">在此获取 Gemini API Key</a>
             </div>
          </div>
       </div>
@@ -139,13 +143,22 @@ const App: React.FC = () => {
             <div className="w-10 h-10 bg-chiikawa-pink rounded-full flex items-center justify-center text-2xl animate-bounce-slow">
               🍥
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-chiikawa-pink tracking-tight">
+            <h1 className="text-xl md:text-3xl font-serif font-bold text-chiikawa-pink tracking-tight truncate">
               Chiikawa 漫画机
             </h1>
           </div>
-          <div className="hidden md:flex items-center text-xs font-bold text-chiikawa-blue bg-blue-50 px-3 py-1 rounded-full border border-chiikawa-blue gap-2">
-             <Sparkles size={12} />
-             Gemini 3 Pro + Image Preview
+          <div className="flex items-center gap-2 md:gap-4">
+             <div className="hidden md:flex items-center text-xs font-bold text-chiikawa-blue bg-blue-50 px-3 py-1 rounded-full border border-chiikawa-blue gap-2">
+                <Sparkles size={12} />
+                Gemini 3 Pro
+             </div>
+             <button 
+               onClick={handleClearKey}
+               className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+               title="移除 API Key"
+             >
+               <LogOut size={20} />
+             </button>
           </div>
         </div>
       </header>
