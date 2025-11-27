@@ -47,7 +47,7 @@ const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacte
   
   For each panel, provide:
   1. visual_description: A highly detailed English description for an AI image generator. Describe the characters' poses, expressions, and the background. Mention the art style: 'Chiikawa style, hand-drawn lines'.
-  2. dialogue: The exact text for the speech bubble. Keep it brief (under 10 chars if Chinese/Japanese, under 6 words if English). If silence/sound effect only, leave empty.
+  2. dialogue: The exact text for the speech bubble. Keep it brief (under 10 chars, use Chinese). If silence/sound effect only, leave empty.
   
   Return ONLY the JSON array.`;
 
