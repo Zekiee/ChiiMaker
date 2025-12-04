@@ -41,14 +41,23 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
         {isStripLayout ? (
            /* SINGLE IMAGE STRIP MODE */
            <div className="w-full relative group">
-             <img 
-               src={story.panels[0].imageUrl} 
-               alt="Generated Chiikawa Comic Strip"
-               className="w-full h-auto block"
-             />
-             {/* Hover overlay for download hint */}
-             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center pointer-events-none">
-             </div>
+             {story.panels[0]?.imageUrl ? (
+                <img 
+                  src={story.panels[0].imageUrl} 
+                  alt="Generated Chiikawa Comic Strip"
+                  className="w-full h-auto block"
+                />
+             ) : (
+                <div className="w-full aspect-[9/16] bg-chiikawa-bg border-2 border-dashed border-chiikawa-blue/20 rounded-lg flex flex-col items-center justify-center text-center p-4">
+                  <div className="text-4xl mb-2 opacity-50">🖼️</div>
+                  <p className="font-serif text-chiikawa-text/60">
+                    图片未保存以节省空间
+                  </p>
+                  <p className="text-xs text-chiikawa-text/40 mt-1">
+                    （漫画仅在当前会话中可见）
+                  </p>
+                </div>
+             )}
            </div>
         ) : (
            /* LEGACY GRID MODE (4 separate images) */

@@ -36,9 +36,20 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Persist stories
+  // Persist stories (without large image data)
   useEffect(() => {
-    localStorage.setItem('chiikawa-stories', JSON.stringify(stories));
+    try {
+      const storiesToPersist = stories.map(story => ({
+        ...story,
+        panels: story.panels.map(panel => ({
+          ...panel,
+          imageUrl: '', // Remove large base64 data to avoid storage quota errors
+        })),
+      }));
+      localStorage.setItem('chiikawa-stories', JSON.stringify(storiesToPersist));
+    } catch (e) {
+      console.error("Failed to save stories to localStorage:", e);
+    }
   }, [stories]);
 
   const handleSaveKey = () => {
