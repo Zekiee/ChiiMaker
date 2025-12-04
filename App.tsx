@@ -7,7 +7,7 @@ import { ImageUploader } from './components/ImageUploader';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
