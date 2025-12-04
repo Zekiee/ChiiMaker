@@ -6,7 +6,7 @@ import { ComicStrip } from './components/ComicStrip';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
