@@ -126,7 +126,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
             <div className="text-6xl mb-6 animate-bounce-slow">✨</div>
-            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
+            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器v1.3.1</h1>
             <p className="text-gray-500 mb-8">
               请输入您的 Gemini API Key 以开始创作。<br/>
               <span className="text-xs">我们不会上传您的密钥，仅存储在本地浏览器中。</span>
