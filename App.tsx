@@ -3,14 +3,16 @@ import { generateChiikawaStory } from './services/geminiService';
 import { ChiikawaCharacter, ComicStory } from './types';
 import { CharacterSelector } from './components/CharacterSelector';
 import { ComicStrip } from './components/ComicStrip';
+import { ImageUploader } from './components/ImageUploader';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.3.0";
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedCharacters, setSelectedCharacters] = useState<ChiikawaCharacter[]>([ChiikawaCharacter.CHIIKAWA]);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
   // Store a list of stories
   const [stories, setStories] = useState<ComicStory[]>([]);
@@ -91,7 +93,7 @@ const App: React.FC = () => {
       // Small delay to let UI update
       await new Promise(r => setTimeout(r, 100));
       
-      const response = await generateChiikawaStory(apiKey, prompt, selectedCharacters);
+      const response = await generateChiikawaStory(apiKey, prompt, selectedCharacters, uploadedImage);
       
       setLoadingStage('正在绘制漫画...');
 
@@ -100,6 +102,7 @@ const App: React.FC = () => {
       } else if (response.story) {
         setStories(prev => [response.story!, ...prev]);
         setPrompt(''); 
+        setUploadedImage(null);
       }
     } catch (err) {
       setError("出错了，请重试。");
@@ -114,6 +117,9 @@ const App: React.FC = () => {
       setStories(prev => prev.filter(s => s.id !== id));
     }
   };
+  
+  const handleImageUpload = (base64: string) => setUploadedImage(base64);
+  const handleImageRemove = () => setUploadedImage(null);
 
   if (!apiKey) {
     return (
@@ -187,7 +193,7 @@ const App: React.FC = () => {
             四格漫画生成器
           </h2>
           <p className="text-lg text-gray-500 font-medium">
-            选择角色，描述剧情，让 AI 为你创作专属漫画！
+            选择角色，描述剧情，甚至上传图片，让 AI 为你创作专属漫画！
           </p>
         </div>
 
@@ -199,6 +205,12 @@ const App: React.FC = () => {
             onToggle={toggleCharacter} 
           />
           
+          <ImageUploader 
+            previewUrl={uploadedImage}
+            onImageUpload={handleImageUpload}
+            onImageRemove={handleImageRemove}
+          />
+
           <div className="relative mb-6">
             <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">
               故事创意 / 剧情场景

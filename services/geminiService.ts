@@ -28,16 +28,20 @@ interface ScriptPanel {
 }
 
 // Step 1: Generate the script
-const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacter[], userPrompt: string): Promise<ScriptPanel[]> => {
+const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacter[], userPrompt: string, imageProvided: boolean): Promise<ScriptPanel[]> => {
   const model = 'gemini-3-pro-preview';
   
   const characterNames = characters.join(', ');
   
   const prompt = `You are a manga writer for the "Chiikawa" series.
+  ${imageProvided ? 'A reference image has been provided by the user.' : ''}
   Characters: ${characterNames}.
   Scenario: ${userPrompt}.
   
-  Create a funny, cute, or chaotic 4-panel comic script (4-koma).
+  ${imageProvided 
+    ? 'Your task is to create a story that continues from, or is inspired by, the provided image and user prompt. Make the story funny, cute, or chaotic.' 
+    : 'Create a funny, cute, or chaotic 4-panel comic script (4-koma).'
+  }
   
   Structure:
   Panel 1: Introduction/Setup.
@@ -46,7 +50,7 @@ const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacte
   Panel 4: Punchline/Conclusion.
   
   For each panel, provide:
-  1. visual_description: A highly detailed English description for an AI image generator. Describe the characters' poses, expressions, and the background. Mention the art style: 'Chiikawa style, hand-drawn lines'.
+  1. visual_description: A highly detailed English description for an AI image generator. Describe the characters' poses, expressions, and the background. Mention the art style: 'Chiikawa style, hand-drawn lines'. If an image was provided, incorporate its elements (characters, style) into your description.
   2. dialogue: The exact text for the speech bubble. Keep it brief (under 10 chars, use Chinese). If silence/sound effect only, leave empty.
   
   Return ONLY the JSON array.`;
@@ -76,7 +80,7 @@ const generateComicScript = async (ai: GoogleGenAI, characters: ChiikawaCharacte
 };
 
 // Step 2: Generate the FULL STRIP image
-const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], characters: ChiikawaCharacter[]): Promise<ComicPanel> => {
+const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], characters: ChiikawaCharacter[], uploadedImage: string | null): Promise<ComicPanel> => {
   const model = 'gemini-3-pro-image-preview';
   
   // Combine all character visual descriptions
@@ -94,6 +98,7 @@ const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], ch
     Create a vertical 4-panel comic strip (4-koma manga) on a single image.
     Style: Official Chiikawa anime art style. Hand-drawn, shaky lines, soft pastel colors (pink, white, blue), cute, minimalist background.
     Characters: ${charDescriptions}.
+    ${uploadedImage ? 'Reference the provided user image for characters, objects, or style.' : ''}
     
     Layout: The image is vertically divided into 4 equal square panels (top to bottom).
     
@@ -104,10 +109,22 @@ const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], ch
     Ensure text in speech bubbles is legible.
     High quality digital illustration.
   `;
+  
+  const contentParts: any[] = [];
+  if (uploadedImage) {
+    const [mimeType, base64Data] = uploadedImage.split(';base64,');
+    contentParts.push({
+      inlineData: {
+        mimeType: mimeType.replace('data:', ''),
+        data: base64Data,
+      },
+    });
+  }
+  contentParts.push({ text: imagePrompt });
 
   const response = await ai.models.generateContent({
     model,
-    contents: { parts: [{ text: imagePrompt }] },
+    contents: { parts: contentParts },
     config: {
       imageConfig: { aspectRatio: "9:16" } // Vertical strip aspect ratio
     }
@@ -136,19 +153,20 @@ const generateFullStripImage = async (ai: GoogleGenAI, script: ScriptPanel[], ch
 export const generateChiikawaStory = async (
   apiKey: string,
   userPrompt: string, 
-  characters: ChiikawaCharacter[]
+  characters: ChiikawaCharacter[],
+  uploadedImage: string | null
 ): Promise<GeminiResponse> => {
   try {
     const ai = new GoogleGenAI({ apiKey });
     
     // 1. Generate Script
-    const script = await generateComicScript(ai, characters, userPrompt);
+    const script = await generateComicScript(ai, characters, userPrompt, !!uploadedImage);
     
     // 2. Generate Single Image Strip (9:16 aspect ratio)
     // We strictly use the first 4 panels from the script if more are returned
     const limitedScript = script.slice(0, 4);
     
-    const fullStripPanel = await generateFullStripImage(ai, limitedScript, characters);
+    const fullStripPanel = await generateFullStripImage(ai, limitedScript, characters, uploadedImage);
 
     const story: ComicStory = {
       id: Date.now().toString(),
