@@ -6,6 +6,8 @@ import { ComicStrip } from './components/ComicStrip';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
+const APP_VERSION = "1.2.0";
+
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedCharacters, setSelectedCharacters] = useState<ChiikawaCharacter[]>([ChiikawaCharacter.CHIIKAWA]);
@@ -157,6 +159,9 @@ const App: React.FC = () => {
             <h1 className="text-xl md:text-3xl font-serif font-bold text-chiikawa-pink tracking-tight truncate">
               Chiikawa 漫画机
             </h1>
+            <div className="bg-gray-200 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:block">
+              {APP_VERSION}
+            </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
              <div className="hidden md:flex items-center text-xs font-bold text-chiikawa-blue bg-blue-50 px-3 py-1 rounded-full border border-chiikawa-blue gap-2">
