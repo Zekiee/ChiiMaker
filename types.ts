@@ -18,7 +18,6 @@ export enum ChiikawaStyle {
 export interface ComicPanel {
   panelNumber: number;
   imageUrl: string;
-  animatedImageUrl?: string; // Optional second frame for GIF-like effect
   visualDescription: string;
   dialogue: string;
 }

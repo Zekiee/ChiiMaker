@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ComicStory } from '../types';
-import { Trash2, Copy, Check, Film } from 'lucide-react';
+import { Trash2, Copy, Check } from 'lucide-react';
 
 interface ComicStripProps {
   story: ComicStory;
@@ -26,8 +26,6 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
   };
 
   const isStripLayout = story.layout === 'strip' || story.panels.length === 1;
-  const mainPanel = story.panels[0];
-  const hasAnimation = !!mainPanel?.animatedImageUrl;
 
   return (
     <div className="w-full max-w-lg mx-auto mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -43,11 +41,6 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
           </p>
         </div>
         <div className="flex gap-2 shrink-0 ml-2">
-          {hasAnimation && (
-            <div className="text-chiikawa-blue" title="动画效果">
-              <Film size={18} />
-            </div>
-          )}
           <button onClick={handleCopyPrompt} className="text-gray-300 hover:text-chiikawa-blue transition-colors" title="复制提示词">
             {isCopied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
           </button>
@@ -62,32 +55,12 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
         {isStripLayout ? (
            /* SINGLE IMAGE STRIP MODE */
            <div className="w-full relative group">
-             {mainPanel?.imageUrl ? (
-                <div className="relative">
-                  <style>
-                    {`
-                      @keyframes flicker {
-                        0%, 49.9% { opacity: 1; }
-                        50%, 100% { opacity: 0; }
-                      }
-                      .flicker-image {
-                        animation: flicker 1s step-end infinite;
-                      }
-                    `}
-                  </style>
-                  <img 
-                    src={mainPanel.imageUrl} 
-                    alt="Generated Chiikawa Comic Strip"
-                    className="w-full h-auto block"
-                  />
-                  {hasAnimation && (
-                    <img 
-                      src={mainPanel.animatedImageUrl}
-                      alt="Animated frame"
-                      className="absolute top-0 left-0 w-full h-auto block flicker-image"
-                    />
-                  )}
-                </div>
+             {story.panels[0]?.imageUrl ? (
+                <img 
+                  src={story.panels[0].imageUrl} 
+                  alt="Generated Chiikawa Comic Strip"
+                  className="w-full h-auto block"
+                />
              ) : (
                 <div className="w-full aspect-[9/16] bg-chiikawa-bg border-2 border-dashed border-chiikawa-blue/20 rounded-lg flex flex-col items-center justify-center text-center p-4">
                   <div className="text-4xl mb-2 opacity-50">🖼️</div>
@@ -126,7 +99,7 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
       <div className="mt-4 flex justify-center">
          <div className="text-chiikawa-text/40 text-xs font-serif italic flex items-center gap-1">
             Chiikawa 漫画生成器制作
-            {hasAnimation && <span className="bg-chiikawa-blue/20 text-chiikawa-blue px-1.5 py-0.5 rounded text-[10px] font-bold">动图版</span>}
+            {isStripLayout && <span className="bg-chiikawa-pink/20 text-chiikawa-pink px-1.5 py-0.5 rounded text-[10px] font-bold">V2</span>}
          </div>
       </div>
     </div>
