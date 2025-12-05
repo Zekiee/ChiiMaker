@@ -7,7 +7,7 @@ import { ImageUploader } from './components/ImageUploader';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.3.2";
+const APP_VERSION = "1.3.3";
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -25,8 +25,11 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [tempApiKey, setTempApiKey] = useState('');
 
-  // Load API key and stories on mount
+  // Load API key and stories on mount, and sync version title
   useEffect(() => {
+    // Unified Version Management: Update document title
+    document.title = `Chiikawa 漫画生成器 v${APP_VERSION}`;
+
     const storedKey = localStorage.getItem('chiikawa_api_key');
     if (storedKey) setApiKey(storedKey);
 
@@ -150,7 +153,8 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
             <div className="text-6xl mb-6 animate-bounce-slow">✨</div>
-            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器v1.3.1</h1>
+            <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
+            <div className="text-sm font-bold text-chiikawa-pink mb-4 opacity-80">v{APP_VERSION}</div>
             <p className="text-gray-500 mb-8">
               请输入您的 Gemini API Key 以开始创作。<br/>
               <span className="text-xs">我们不会上传您的密钥，仅存储在本地浏览器中。</span>
@@ -190,7 +194,7 @@ const App: React.FC = () => {
               Chiikawa 漫画机
             </h1>
             <div className="bg-gray-200 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:block">
-              {APP_VERSION}
+              v{APP_VERSION}
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
@@ -242,7 +246,7 @@ const App: React.FC = () => {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`例如：吉伊卡哇和小八在森林里发现了一个奇怪的按钮，按下后发生了有趣的事情。`}
+              placeholder={`例如：吉伊卡哇和小八在森林里发现了一个奇怪的按钮... (你也可以描述风格，如：手绘风、哭哭脸、正在吃东西等)`}
               className="w-full p-6 bg-chiikawa-bg border-4 border-transparent focus:border-chiikawa-pink rounded-2xl text-lg outline-none transition-all placeholder-gray-300 resize-none min-h-[120px] shadow-inner"
               maxLength={400}
             />
