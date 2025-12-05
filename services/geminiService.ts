@@ -25,7 +25,9 @@ export const generateChiikawaStory = async (
   apiKey: string,
   userPrompt: string, 
   characters: ChiikawaCharacter[],
-  uploadedImage: string | null
+  uploadedImage: string | null,
+  stylePrompt: string,
+  storyFrameworkPrompt: string
 ): Promise<GeminiResponse> => {
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -34,14 +36,11 @@ export const generateChiikawaStory = async (
     const charDescriptions = characters.map(getCharacterVisualDescription).join(', ');
 
     const fullPrompt = `
-      You are an expert manga artist specializing in the "Chiikawa" series. 
+      You are an expert manga artist.
       Your task is to create a single vertical 4-panel comic strip (4-koma manga) based on the user's request.
 
       **Art Style:**
-      - Official Chiikawa anime art style.
-      - Hand-drawn, slightly shaky lines.
-      - Soft pastel colors (pinks, whites, blues).
-      - Cute, minimalist backgrounds.
+      - ${stylePrompt}
 
       **Main Characters:**
       - ${charDescriptions}.
@@ -49,15 +48,17 @@ export const generateChiikawaStory = async (
       **User's Scenario:**
       - ${userPrompt}
 
+      **Story Framework:**
+      - ${storyFrameworkPrompt}
+
       **Image Reference:**
-      - ${uploadedImage ? "An image has been provided. Use it as a PRIMARY reference. The story should continue from the image, or incorporate the characters, objects, or style from the image into the Chiikawa world." : "No image provided. Create a story from scratch."}
+      - ${uploadedImage ? "An image has been provided. Use it as a PRIMARY reference. The story should continue from the image, or incorporate the characters, objects, or style from the image into the world." : ""}
       
       **Comic Structure & Rules:**
       1.  **Layout:** The final output must be ONE SINGLE IMAGE, vertically divided into 4 equal square panels (top to bottom).
-      2.  **Story:** Create a funny, cute, or chaotic 4-panel story following the user's scenario. The story should have a clear beginning, middle, and a punchline/conclusion in the final panel.
-      3.  **Dialogue:** Include brief Chinese dialogue in speech bubbles where appropriate. Keep text short and legible.
-      4.  **Consistency:** Ensure the characters look consistent across all 4 panels.
-      5.  **Output:** Generate only the high-quality digital illustration of the comic strip.
+      2.  **Dialogue:** Include brief Chinese dialogue in speech bubbles where appropriate. Keep text short and legible.
+      3.  **Consistency:** Ensure the characters look consistent across all 4 panels.
+      4.  **Output:** Generate only the high-quality digital illustration of the comic strip.
     `;
 
     const contentParts: any[] = [];

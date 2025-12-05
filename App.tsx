@@ -4,16 +4,92 @@ import { ChiikawaCharacter, ComicStory } from './types';
 import { CharacterSelector } from './components/CharacterSelector';
 import { ComicStrip } from './components/ComicStrip';
 import { ImageUploader } from './components/ImageUploader';
+import { OptionSelector } from './components/OptionSelector';
 import { Button } from './components/Button';
-import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
+import { Wand2, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.3.3";
+const APP_VERSION = "1.3.4";
+
+// --- Configuration Data ---
+
+const ART_STYLES = [
+  {
+    id: 'default',
+    label: '经典原版',
+    icon: '✨',
+    value: `Official Chiikawa anime art style.
+      - Hand-drawn, slightly shaky lines.
+      - Soft pastel colors (pinks, whites, blues).
+      - Cute, minimalist backgrounds.`
+  },
+  {
+    id: 'watercolor',
+    label: '水彩绘本',
+    icon: '🎨',
+    value: `Soft watercolor painting style.
+      - Bleeding colors and visible paper texture.
+      - Artistic, dreamy, and gentle atmosphere.
+      - Less distinct outlines, more fluid forms.`
+  },
+  {
+    id: 'sketch',
+    label: '黑白草稿',
+    icon: '✏️',
+    value: `Black and white manga sketch style.
+      - Rough pencil lines and cross-hatching shading.
+      - Traditional comic book look.
+      - Expressive strokes.`
+  },
+  {
+    id: 'realistic',
+    label: '超写实风',
+    icon: '📸',
+    value: `Hyper-realistic CGI or photography style.
+      - Detailed textures (fur, environment).
+      - Realistic lighting and shadows.
+      - Looking like a high-end 3D movie render.`
+  }
+];
+
+const STORY_FRAMEWORKS = [
+  {
+    id: 'default',
+    label: '日常搞笑',
+    icon: '😆',
+    value: `Create a funny, cute, or chaotic 4-panel story following the user's scenario. The story should have a clear beginning, middle, and a punchline/conclusion in the final panel.`
+  },
+  {
+    id: 'wholesome',
+    label: '温馨治愈',
+    icon: '💖',
+    value: `Create a heartwarming, healing, and peaceful story. Focus on friendship, sharing food, kindness, or small happy moments. No bad things happen. Warm and fuzzy ending.`
+  },
+  {
+    id: 'horror',
+    label: '怪诞恐怖',
+    icon: '👻',
+    value: `Create a slightly unsettling, creepy, or weird story typical of deep Chiikawa lore. Cute characters but with a sense of underlying danger, weird creatures, or nightmarish logic.`
+  },
+  {
+    id: 'action',
+    label: '热血战斗',
+    icon: '⚔️',
+    value: `Create an action-packed story. The characters are fighting a chimera or monster. Use dynamic poses, speed lines, and visual sound effects. Heroic or struggling moments.`
+  }
+];
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedCharacters, setSelectedCharacters] = useState<ChiikawaCharacter[]>([ChiikawaCharacter.CHIIKAWA]);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
+  // Style & Story State
+  const [artStyleId, setArtStyleId] = useState('default');
+  const [customArtStyle, setCustomArtStyle] = useState('');
+  
+  const [storyId, setStoryId] = useState('default');
+  const [customStory, setCustomStory] = useState('');
+
   // Store a list of stories
   const [stories, setStories] = useState<ComicStory[]>([]);
   
@@ -27,7 +103,6 @@ const App: React.FC = () => {
 
   // Load API key and stories on mount, and sync version title
   useEffect(() => {
-    // Unified Version Management: Update document title
     document.title = `Chiikawa 漫画生成器 v${APP_VERSION}`;
 
     const storedKey = localStorage.getItem('chiikawa_api_key');
@@ -67,7 +142,6 @@ const App: React.FC = () => {
       localStorage.setItem('chiikawa-stories', JSON.stringify(storiesToPersist));
     } catch (e) {
       console.error("Failed to save stories to localStorage:", e);
-      // If saving fails (e.g., quota exceeded), try saving without any images as a fallback
       try {
         const storiesToPersistStripped = stories.map(story => ({
           ...story,
@@ -117,10 +191,25 @@ const App: React.FC = () => {
     setLoadingStage('正在构思故事...');
 
     try {
-      // Small delay to let UI update
+      // Determine final prompts for style and story
+      const finalArtStyle = artStyleId === 'custom' 
+        ? customArtStyle 
+        : ART_STYLES.find(s => s.id === artStyleId)?.value || ART_STYLES[0].value;
+      
+      const finalStoryFramework = storyId === 'custom' 
+        ? customStory 
+        : STORY_FRAMEWORKS.find(s => s.id === storyId)?.value || STORY_FRAMEWORKS[0].value;
+
       await new Promise(r => setTimeout(r, 100));
       
-      const response = await generateChiikawaStory(apiKey, prompt, selectedCharacters, uploadedImage);
+      const response = await generateChiikawaStory(
+        apiKey, 
+        prompt, 
+        selectedCharacters, 
+        uploadedImage,
+        finalArtStyle,
+        finalStoryFramework
+      );
       
       setLoadingStage('正在绘制漫画...');
 
@@ -129,6 +218,7 @@ const App: React.FC = () => {
       } else if (response.story) {
         setStories(prev => [response.story!, ...prev]);
         setPrompt(''); 
+        // We do NOT clear art style / story settings so user can reuse them
         setUploadedImage(null);
       }
     } catch (err) {
@@ -221,7 +311,7 @@ const App: React.FC = () => {
             四格漫画生成器
           </h2>
           <p className="text-lg text-gray-500 font-medium">
-            选择角色，描述剧情，甚至上传图片，让 AI 为你创作专属漫画！
+            选择角色，描述剧情，让 AI 为你创作专属漫画！
           </p>
         </div>
 
@@ -232,6 +322,30 @@ const App: React.FC = () => {
             selectedCharacters={selectedCharacters} 
             onToggle={toggleCharacter} 
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+            <OptionSelector
+              title="Art Style (画风)"
+              icon="style"
+              options={ART_STYLES}
+              selectedId={artStyleId}
+              onSelect={setArtStyleId}
+              customValue={customArtStyle}
+              onCustomChange={setCustomArtStyle}
+              placeholder="描述你想要的画风，例如：'赛博朋克霓虹风格'，'梵高星空风格'..."
+            />
+
+            <OptionSelector
+              title="Story (故事框架)"
+              icon="story"
+              options={STORY_FRAMEWORKS}
+              selectedId={storyId}
+              onSelect={setStoryId}
+              customValue={customStory}
+              onCustomChange={setCustomStory}
+              placeholder="描述故事结构，例如：'结局必须是大反转'，'完全没有对白的默剧'..."
+            />
+          </div>
           
           <ImageUploader 
             previewUrl={uploadedImage}
@@ -241,12 +355,12 @@ const App: React.FC = () => {
 
           <div className="relative mb-6">
             <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">
-              故事创意 / 剧情场景
+              故事创意 / 具体剧情
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`例如：吉伊卡哇和小八在森林里发现了一个奇怪的按钮... (你也可以描述风格，如：手绘风、哭哭脸、正在吃东西等)`}
+              placeholder={`例如：吉伊卡哇和小八在森林里发现了一个奇怪的按钮...`}
               className="w-full p-6 bg-chiikawa-bg border-4 border-transparent focus:border-chiikawa-pink rounded-2xl text-lg outline-none transition-all placeholder-gray-300 resize-none min-h-[120px] shadow-inner"
               maxLength={400}
             />
@@ -261,7 +375,7 @@ const App: React.FC = () => {
             <Button 
               onClick={handleGenerate} 
               isLoading={isGenerating} 
-              disabled={!prompt.trim() || selectedCharacters.length === 0}
+              disabled={!prompt.trim() || selectedCharacters.length === 0 || (artStyleId === 'custom' && !customArtStyle.trim()) || (storyId === 'custom' && !customStory.trim())}
               className="w-full md:w-auto min-w-[200px] text-lg order-1 md:order-2"
             >
               {isGenerating ? '正在施法...' : (
