@@ -57,7 +57,8 @@ export const generateChiikawaStory = async (
       2.  **Story:** Create a funny, cute, or chaotic 4-panel story following the user's scenario. The story should have a clear beginning, middle, and a punchline/conclusion in the final panel.
       3.  **Dialogue:** Include brief Chinese dialogue in speech bubbles where appropriate. Keep text short and legible.
       4.  **Consistency:** Ensure the characters look consistent across all 4 panels.
-      5.  **Output:** Generate only the high-quality digital illustration of the comic strip.
+      5.  **SPECIAL ANIMATION REQUEST:** Please generate a SECOND, slightly different version of the ENTIRE comic strip. This second version should have a very small animation change ONLY in the 4th (bottom) panel, like a character blinking, a sparkle appearing, or a subtle expression change. The first 3 panels must be identical in both images. This will be used to create a GIF-like effect.
+      6.  **Output:** Generate TWO high-quality digital illustrations of the comic strip as requested.
     `;
 
     const contentParts: any[] = [];
@@ -80,17 +81,16 @@ export const generateChiikawaStory = async (
       }
     });
 
-    let imageUrl = '';
+    const imageUrls: string[] = [];
     if (response.candidates?.[0]?.content?.parts) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData && part.inlineData.data) {
-          imageUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
-          break;
+          imageUrls.push(`data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`);
         }
       }
     }
 
-    if (!imageUrl) {
+    if (imageUrls.length === 0) {
       throw new Error("无法生成漫画图片，模型可能没有返回图像。");
     }
 
@@ -100,7 +100,8 @@ export const generateChiikawaStory = async (
       characters: characters,
       panels: [{
         panelNumber: 1, // Represents the whole strip
-        imageUrl,
+        imageUrl: imageUrls[0],
+        animatedImageUrl: imageUrls.length > 1 ? imageUrls[1] : undefined,
         visualDescription: "Full 4-panel strip",
         dialogue: "Full story"
       }],
