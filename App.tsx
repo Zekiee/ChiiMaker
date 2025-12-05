@@ -7,7 +7,7 @@ import { ImageUploader } from './components/ImageUploader';
 import { Button } from './components/Button';
 import { Wand2, KeyRound, Sparkles, LogOut, ArrowRight } from 'lucide-react';
 
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.3.2";
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -40,19 +40,43 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Persist stories (without large image data)
+  // Persist stories
   useEffect(() => {
+    if (stories.length === 0) {
+      localStorage.removeItem('chiikawa-stories');
+      return;
+    }
     try {
-      const storiesToPersist = stories.map(story => ({
-        ...story,
-        panels: story.panels.map(panel => ({
-          ...panel,
-          imageUrl: '', // Remove large base64 data to avoid storage quota errors
-        })),
-      }));
+      const storiesToPersist = stories.map((story, index) => {
+        // Keep the image ONLY for the most recent story (at index 0)
+        if (index === 0) {
+          return story;
+        }
+        // For all older stories, strip the large image data
+        return {
+          ...story,
+          panels: story.panels.map(panel => ({
+            ...panel,
+            imageUrl: '', 
+          })),
+        };
+      });
       localStorage.setItem('chiikawa-stories', JSON.stringify(storiesToPersist));
     } catch (e) {
       console.error("Failed to save stories to localStorage:", e);
+      // If saving fails (e.g., quota exceeded), try saving without any images as a fallback
+      try {
+        const storiesToPersistStripped = stories.map(story => ({
+          ...story,
+          panels: story.panels.map(panel => ({
+            ...panel,
+            imageUrl: '',
+          })),
+        }));
+        localStorage.setItem('chiikawa-stories', JSON.stringify(storiesToPersistStripped));
+      } catch (fallbackError) {
+        console.error("Fallback save also failed:", fallbackError);
+      }
     }
   }, [stories]);
 

@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { ComicStory } from '../types';
-import { Trash2, Download, Share2 } from 'lucide-react';
+import { Trash2, Copy, Check } from 'lucide-react';
 
 interface ComicStripProps {
   story: ComicStory;
@@ -9,9 +9,20 @@ interface ComicStripProps {
 
 export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
   const stripRef = useRef<HTMLDivElement>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
-  const handleDownload = () => {
-    alert("长按或右键点击图片即可保存！");
+  const handleCopyPrompt = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(story.prompt).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000); // Reset icon after 2 seconds
+      }).catch(err => {
+        console.error('Failed to copy prompt: ', err);
+        alert('复制失败！');
+      });
+    } else {
+      alert("您的浏览器不支持自动复制功能。");
+    }
   };
 
   const isStripLayout = story.layout === 'strip' || story.panels.length === 1;
@@ -29,8 +40,11 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
              {new Date(story.timestamp).toLocaleDateString()} • {story.characters.join(', ')}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => onRemove(story.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+        <div className="flex gap-2 shrink-0 ml-2">
+          <button onClick={handleCopyPrompt} className="text-gray-300 hover:text-chiikawa-blue transition-colors" title="复制提示词">
+            {isCopied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+          </button>
+          <button onClick={() => onRemove(story.id)} className="text-gray-300 hover:text-red-400 transition-colors" title="删除漫画">
             <Trash2 size={18} />
           </button>
         </div>
@@ -54,7 +68,7 @@ export const ComicStrip: React.FC<ComicStripProps> = ({ story, onRemove }) => {
                     图片未保存以节省空间
                   </p>
                   <p className="text-xs text-chiikawa-text/40 mt-1">
-                    （漫画仅在当前会话中可见）
+                    （仅保存最新一张漫画图）
                   </p>
                 </div>
              )}
