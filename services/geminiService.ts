@@ -22,6 +22,7 @@ const getCharacterVisualDescription = (character: ChiikawaCharacter): string => 
 };
 
 export const generateChiikawaStory = async (
+  apiKey: string,
   userPrompt: string, 
   characters: ChiikawaCharacter[],
   uploadedImage: string | null,
@@ -30,7 +31,7 @@ export const generateChiikawaStory = async (
   layoutPrompt: string
 ): Promise<GeminiResponse> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const model = 'gemini-3-pro-image-preview';
 
     const charDescriptions = characters.map(getCharacterVisualDescription).join(', ');
@@ -123,6 +124,8 @@ export const generateChiikawaStory = async (
     // Provide more specific feedback for common errors
     if (errorMessage.includes('400')) {
         errorMessage = '请求无效，可能是图片格式或提示有问题。';
+    } else if (errorMessage.includes('403')) {
+        errorMessage = 'API Key 无效或没有权限。';
     } else if (errorMessage.includes('500')) {
         errorMessage = '服务器端发生错误，请稍后重试。';
     }

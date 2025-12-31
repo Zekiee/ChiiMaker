@@ -8,7 +8,7 @@ import { OptionSelector } from './components/OptionSelector';
 import { Button } from './components/Button';
 import { Wand2, Sparkles, LogOut, ArrowRight, Key } from 'lucide-react';
 
-const APP_VERSION = "1.3.5";
+const APP_VERSION = "1.3.6";
 
 // --- Configuration Data ---
 
@@ -115,11 +115,16 @@ const App: React.FC = () => {
   const [loadingStage, setLoadingStage] = useState<string>(''); // For feedback text
   const [error, setError] = useState<string | null>(null);
   
-  const [hasKey, setHasKey] = useState(false);
+  // API Key State
+  const [apiKey, setApiKey] = useState<string>('');
+  const [tempApiKey, setTempApiKey] = useState('');
 
-  // Load stories on mount, and sync version title
+  // Load API key and stories on mount, and sync version title
   useEffect(() => {
     document.title = `Chiikawa 漫画生成器 v${APP_VERSION}`;
+
+    const storedKey = localStorage.getItem('chiikawa_api_key');
+    if (storedKey) setApiKey(storedKey);
 
     const savedStories = localStorage.getItem('chiikawa-stories');
     if (savedStories) {
@@ -130,30 +135,6 @@ const App: React.FC = () => {
       }
     }
   }, []);
-
-  // Check API Key on mount
-  useEffect(() => {
-    const checkKey = async () => {
-      if ((window as any).aistudio && await (window as any).aistudio.hasSelectedApiKey()) {
-        setHasKey(true);
-      }
-    };
-    checkKey();
-  }, []);
-
-  const handleSelectKey = async () => {
-    if ((window as any).aistudio) {
-      try {
-        await (window as any).aistudio.openSelectKey();
-        // Assume success as per guidelines to mitigate race condition
-        setHasKey(true);
-      } catch (e) {
-        console.error("Key selection failed", e);
-      }
-    } else {
-      alert("AI Studio environment not detected.");
-    }
-  };
 
   // Persist stories
   useEffect(() => {
@@ -194,6 +175,21 @@ const App: React.FC = () => {
     }
   }, [stories]);
 
+  const handleSaveKey = () => {
+    if (tempApiKey.trim()) {
+      localStorage.setItem('chiikawa_api_key', tempApiKey.trim());
+      setApiKey(tempApiKey.trim());
+      setTempApiKey('');
+    }
+  };
+
+  const handleClearKey = () => {
+    if (window.confirm("确定要移除 API 密钥吗？")) {
+      localStorage.removeItem('chiikawa_api_key');
+      setApiKey('');
+    }
+  };
+
   const toggleCharacter = (char: ChiikawaCharacter) => {
     setSelectedCharacters(prev => {
       if (prev.includes(char)) {
@@ -206,13 +202,7 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
-
-    // Double check key (though UI shouldn't allow it if !hasKey)
-    if (!hasKey) {
-       await handleSelectKey();
-       return;
-    }
+    if (!prompt.trim() || !apiKey) return;
 
     setIsGenerating(true);
     setError(null);
@@ -235,6 +225,7 @@ const App: React.FC = () => {
       await new Promise(r => setTimeout(r, 100));
       
       const response = await generateChiikawaStory(
+        apiKey,
         prompt, 
         selectedCharacters, 
         uploadedImage,
@@ -246,12 +237,9 @@ const App: React.FC = () => {
       setLoadingStage('正在绘制漫画...');
 
       if (response.error) {
-        if (response.error.includes("Requested entity was not found")) {
-            setHasKey(false);
-            await handleSelectKey();
-            setError("API Key 似乎无效，请重新选择。");
-        } else {
-            setError(response.error);
+        setError(response.error);
+        if (response.error.includes("API Key")) {
+           // Optional: clear bad key automatically or just let user remove it manually
         }
       } else if (response.story) {
         setStories(prev => [response.story!, ...prev]);
@@ -275,7 +263,7 @@ const App: React.FC = () => {
   const handleImageUpload = (base64: string) => setUploadedImage(base64);
   const handleImageRemove = () => setUploadedImage(null);
 
-  if (!hasKey) {
+  if (!apiKey) {
     return (
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
@@ -283,17 +271,25 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
             <div className="text-sm font-bold text-chiikawa-pink mb-4 opacity-80">v{APP_VERSION}</div>
             <p className="text-gray-500 mb-8">
-              请选择您的 Gemini API Key (GCP Project) 以开始创作。<br/>
-              <span className="text-xs">
-                需要使用付费项目的 API Key。<br/>
-                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">查看计费文档</a>
-              </span>
+              请输入您的 Gemini API Key 以开始创作。<br/>
+              <span className="text-xs">我们不会上传您的密钥，仅存储在本地浏览器中。</span>
             </p>
             
             <div className="flex flex-col gap-4">
-              <Button onClick={handleSelectKey} className="w-full justify-center">
-                选择 API Key <Key size={18} />
+              <input 
+                type="password" 
+                placeholder="在此粘贴 API Key..." 
+                className="w-full p-4 border-2 border-chiikawa-blue/30 rounded-xl outline-none focus:border-chiikawa-pink transition-colors text-center"
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+              />
+              <Button onClick={handleSaveKey} disabled={!tempApiKey.trim()} className="w-full justify-center">
+                开始使用 <ArrowRight size={18} />
               </Button>
+            </div>
+
+            <div className="mt-6 text-xs text-gray-400">
+               还没有 Key? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">在此获取 Gemini API Key</a>
             </div>
          </div>
       </div>
@@ -322,11 +318,11 @@ const App: React.FC = () => {
                 Gemini 3 Pro
              </div>
              <button 
-               onClick={handleSelectKey}
-               className="p-2 text-gray-400 hover:text-chiikawa-blue transition-colors"
-               title="切换 API Key"
+               onClick={handleClearKey}
+               className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+               title="移除 API Key"
              >
-               <Key size={20} />
+               <LogOut size={20} />
              </button>
           </div>
         </div>
