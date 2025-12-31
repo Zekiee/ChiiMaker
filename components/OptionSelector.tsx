@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, BookOpen, Edit3 } from 'lucide-react';
+import { Pencil, BookOpen, Edit3, LayoutTemplate } from 'lucide-react';
 
 interface OptionItem {
   id: string;
@@ -10,13 +10,14 @@ interface OptionItem {
 
 interface OptionSelectorProps {
   title: string;
-  icon: 'style' | 'story';
+  icon: 'style' | 'story' | 'layout';
   options: OptionItem[];
   selectedId: string;
   onSelect: (id: string) => void;
-  customValue: string;
-  onCustomChange: (val: string) => void;
+  customValue?: string;
+  onCustomChange?: (val: string) => void;
   placeholder?: string;
+  allowCustom?: boolean;
 }
 
 export const OptionSelector: React.FC<OptionSelectorProps> = ({
@@ -25,16 +26,35 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
   options,
   selectedId,
   onSelect,
-  customValue,
-  onCustomChange,
-  placeholder
+  customValue = '',
+  onCustomChange = (_: string) => {},
+  placeholder,
+  allowCustom = true
 }) => {
   const isCustom = selectedId === 'custom';
+
+  const getIcon = () => {
+    switch (icon) {
+      case 'style': return <Pencil size={16} className="text-chiikawa-pink" />;
+      case 'story': return <BookOpen size={16} className="text-chiikawa-blue" />;
+      case 'layout': return <LayoutTemplate size={16} className="text-purple-400" />;
+      default: return <Pencil size={16} />;
+    }
+  };
+
+  const getActiveColorClass = () => {
+    switch (icon) {
+      case 'style': return 'bg-chiikawa-pink text-white border-chiikawa-pink';
+      case 'story': return 'bg-chiikawa-blue text-white border-chiikawa-blue';
+      case 'layout': return 'bg-purple-400 text-white border-purple-400';
+      default: return 'bg-gray-800 text-white';
+    }
+  };
 
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
-        {icon === 'style' ? <Pencil size={16} className="text-chiikawa-pink" /> : <BookOpen size={16} className="text-chiikawa-blue" />}
+        {getIcon()}
         <label className="text-sm font-bold text-gray-400 uppercase tracking-wide">
           {title}
         </label>
@@ -48,7 +68,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
             className={`
               px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all flex items-center gap-2
               ${selectedId === opt.id 
-                ? (icon === 'style' ? 'bg-chiikawa-pink text-white border-chiikawa-pink' : 'bg-chiikawa-blue text-white border-chiikawa-blue')
+                ? getActiveColorClass()
                 : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'
               }
             `}
@@ -57,22 +77,25 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
             {opt.label}
           </button>
         ))}
-        <button
-          onClick={() => onSelect('custom')}
-          className={`
-            px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all flex items-center gap-2
-            ${isCustom
-              ? 'bg-gray-600 text-white border-gray-600'
-              : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'
-            }
-          `}
-        >
-          <Edit3 size={14} />
-          自定义
-        </button>
+        
+        {allowCustom && (
+          <button
+            onClick={() => onSelect('custom')}
+            className={`
+              px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all flex items-center gap-2
+              ${isCustom
+                ? 'bg-gray-600 text-white border-gray-600'
+                : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'
+              }
+            `}
+          >
+            <Edit3 size={14} />
+            自定义
+          </button>
+        )}
       </div>
 
-      {isCustom && (
+      {allowCustom && isCustom && (
         <div className="animate-in fade-in zoom-in-95 duration-200">
           <textarea
             value={customValue}

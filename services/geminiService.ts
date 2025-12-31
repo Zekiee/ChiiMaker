@@ -22,22 +22,26 @@ const getCharacterVisualDescription = (character: ChiikawaCharacter): string => 
 };
 
 export const generateChiikawaStory = async (
-  apiKey: string,
   userPrompt: string, 
   characters: ChiikawaCharacter[],
   uploadedImage: string | null,
   stylePrompt: string,
-  storyFrameworkPrompt: string
+  storyFrameworkPrompt: string,
+  layoutPrompt: string
 ): Promise<GeminiResponse> => {
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const model = 'gemini-3-pro-image-preview';
 
     const charDescriptions = characters.map(getCharacterVisualDescription).join(', ');
 
     const fullPrompt = `
       You are an expert manga artist.
-      Your task is to create a single vertical 4-panel comic strip (4-koma manga) based on the user's request.
+      **Task:** Create a high-quality digital illustration based on the following requirements.
+      
+      **Layout & Format:**
+      - ${layoutPrompt}
+      - The output must be ONE SINGLE IMAGE file.
 
       **Art Style:**
       - ${stylePrompt}
@@ -48,17 +52,16 @@ export const generateChiikawaStory = async (
       **User's Scenario:**
       - ${userPrompt}
 
-      **Story Framework:**
+      **Story/Content:**
       - ${storyFrameworkPrompt}
 
       **Image Reference:**
       - ${uploadedImage ? "An image has been provided. Use it as a PRIMARY reference. The story should continue from the image, or incorporate the characters, objects, or style from the image into the world." : ""}
       
-      **Comic Structure & Rules:**
-      1.  **Layout:** The final output must be ONE SINGLE IMAGE, vertically divided into 4 equal square panels (top to bottom).
-      2.  **Dialogue:** Include brief Chinese dialogue in speech bubbles where appropriate. Keep text short and legible.
-      3.  **Consistency:** Ensure the characters look consistent across all 4 panels.
-      4.  **Output:** Generate only the high-quality digital illustration of the comic strip.
+      **Technical Rules:**
+      1.  **Output:** Generate only the image.
+      2.  **Consistency:** Ensure character details are accurate.
+      3.  **Text:** If there is dialogue, use Chinese text in speech bubbles. Keep text legible.
     `;
 
     const contentParts: any[] = [];
@@ -77,7 +80,7 @@ export const generateChiikawaStory = async (
       model,
       contents: { parts: contentParts },
       config: {
-        imageConfig: { aspectRatio: "9:16" } // Vertical strip aspect ratio
+        imageConfig: { aspectRatio: "9:16" } // Keeping 9:16 for vertical phone screen suitability for both strips and posters
       }
     });
 
@@ -100,10 +103,10 @@ export const generateChiikawaStory = async (
       prompt: userPrompt,
       characters: characters,
       panels: [{
-        panelNumber: 1, // Represents the whole strip
+        panelNumber: 1, // Represents the whole strip/poster
         imageUrl,
-        visualDescription: "Full 4-panel strip",
-        dialogue: "Full story"
+        visualDescription: "Full generated image",
+        dialogue: "Generated content"
       }],
       timestamp: Date.now(),
       layout: 'strip'

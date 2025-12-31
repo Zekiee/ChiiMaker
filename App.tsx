@@ -6,11 +6,26 @@ import { ComicStrip } from './components/ComicStrip';
 import { ImageUploader } from './components/ImageUploader';
 import { OptionSelector } from './components/OptionSelector';
 import { Button } from './components/Button';
-import { Wand2, Sparkles, LogOut, ArrowRight } from 'lucide-react';
+import { Wand2, Sparkles, LogOut, ArrowRight, Key } from 'lucide-react';
 
-const APP_VERSION = "1.3.4";
+const APP_VERSION = "1.3.5";
 
 // --- Configuration Data ---
+
+const LAYOUT_OPTIONS = [
+  {
+    id: '4-panel',
+    label: '四格漫画',
+    icon: '🎞️',
+    value: `Vertical 4-panel comic strip (4-koma manga). Structure: Vertically divided into 4 equal square panels (top to bottom). Clear separation between panels.`
+  },
+  {
+    id: 'poster',
+    label: '单幅海报',
+    icon: '🖼️',
+    value: `Single vertical poster illustration. Structure: One cohesive full-page composition without panel borders. High detail, cinematic or artistic composition.`
+  }
+];
 
 const ART_STYLES = [
   {
@@ -56,7 +71,7 @@ const STORY_FRAMEWORKS = [
     id: 'default',
     label: '日常搞笑',
     icon: '😆',
-    value: `Create a funny, cute, or chaotic 4-panel story following the user's scenario. The story should have a clear beginning, middle, and a punchline/conclusion in the final panel.`
+    value: `Create a funny, cute, or chaotic story following the user's scenario. It should have a clear beginning, middle, and a punchline/conclusion.`
   },
   {
     id: 'wholesome',
@@ -83,7 +98,10 @@ const App: React.FC = () => {
   const [selectedCharacters, setSelectedCharacters] = useState<ChiikawaCharacter[]>([ChiikawaCharacter.CHIIKAWA]);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
-  // Style & Story State
+  // Options State
+  const [layoutId, setLayoutId] = useState('4-panel');
+  const [customLayout, setCustomLayout] = useState('');
+
   const [artStyleId, setArtStyleId] = useState('default');
   const [customArtStyle, setCustomArtStyle] = useState('');
   
@@ -97,16 +115,11 @@ const App: React.FC = () => {
   const [loadingStage, setLoadingStage] = useState<string>(''); // For feedback text
   const [error, setError] = useState<string | null>(null);
   
-  // API Key State
-  const [apiKey, setApiKey] = useState<string>('');
-  const [tempApiKey, setTempApiKey] = useState('');
+  const [hasKey, setHasKey] = useState(false);
 
-  // Load API key and stories on mount, and sync version title
+  // Load stories on mount, and sync version title
   useEffect(() => {
     document.title = `Chiikawa 漫画生成器 v${APP_VERSION}`;
-
-    const storedKey = localStorage.getItem('chiikawa_api_key');
-    if (storedKey) setApiKey(storedKey);
 
     const savedStories = localStorage.getItem('chiikawa-stories');
     if (savedStories) {
@@ -117,6 +130,30 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  // Check API Key on mount
+  useEffect(() => {
+    const checkKey = async () => {
+      if ((window as any).aistudio && await (window as any).aistudio.hasSelectedApiKey()) {
+        setHasKey(true);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleSelectKey = async () => {
+    if ((window as any).aistudio) {
+      try {
+        await (window as any).aistudio.openSelectKey();
+        // Assume success as per guidelines to mitigate race condition
+        setHasKey(true);
+      } catch (e) {
+        console.error("Key selection failed", e);
+      }
+    } else {
+      alert("AI Studio environment not detected.");
+    }
+  };
 
   // Persist stories
   useEffect(() => {
@@ -157,21 +194,6 @@ const App: React.FC = () => {
     }
   }, [stories]);
 
-  const handleSaveKey = () => {
-    if (tempApiKey.trim()) {
-      localStorage.setItem('chiikawa_api_key', tempApiKey.trim());
-      setApiKey(tempApiKey.trim());
-      setTempApiKey('');
-    }
-  };
-
-  const handleClearKey = () => {
-    if (window.confirm("确定要移除 API 密钥吗？")) {
-      localStorage.removeItem('chiikawa_api_key');
-      setApiKey('');
-    }
-  };
-
   const toggleCharacter = (char: ChiikawaCharacter) => {
     setSelectedCharacters(prev => {
       if (prev.includes(char)) {
@@ -186,12 +208,22 @@ const App: React.FC = () => {
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
+    // Double check key (though UI shouldn't allow it if !hasKey)
+    if (!hasKey) {
+       await handleSelectKey();
+       return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setLoadingStage('正在构思故事...');
 
     try {
-      // Determine final prompts for style and story
+      // Determine final prompts
+      const finalLayout = layoutId === 'custom'
+        ? customLayout
+        : LAYOUT_OPTIONS.find(l => l.id === layoutId)?.value || LAYOUT_OPTIONS[0].value;
+
       const finalArtStyle = artStyleId === 'custom' 
         ? customArtStyle 
         : ART_STYLES.find(s => s.id === artStyleId)?.value || ART_STYLES[0].value;
@@ -203,22 +235,27 @@ const App: React.FC = () => {
       await new Promise(r => setTimeout(r, 100));
       
       const response = await generateChiikawaStory(
-        apiKey, 
         prompt, 
         selectedCharacters, 
         uploadedImage,
         finalArtStyle,
-        finalStoryFramework
+        finalStoryFramework,
+        finalLayout
       );
       
       setLoadingStage('正在绘制漫画...');
 
       if (response.error) {
-        setError(response.error);
+        if (response.error.includes("Requested entity was not found")) {
+            setHasKey(false);
+            await handleSelectKey();
+            setError("API Key 似乎无效，请重新选择。");
+        } else {
+            setError(response.error);
+        }
       } else if (response.story) {
         setStories(prev => [response.story!, ...prev]);
         setPrompt(''); 
-        // We do NOT clear art style / story settings so user can reuse them
         setUploadedImage(null);
       }
     } catch (err) {
@@ -238,7 +275,7 @@ const App: React.FC = () => {
   const handleImageUpload = (base64: string) => setUploadedImage(base64);
   const handleImageRemove = () => setUploadedImage(null);
 
-  if (!apiKey) {
+  if (!hasKey) {
     return (
       <div className="min-h-screen bg-[#fff5f7] flex items-center justify-center p-4">
          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-chiikawa-pink/20">
@@ -246,25 +283,17 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-serif text-chiikawa-dark font-bold mb-4">Chiikawa 漫画生成器</h1>
             <div className="text-sm font-bold text-chiikawa-pink mb-4 opacity-80">v{APP_VERSION}</div>
             <p className="text-gray-500 mb-8">
-              请输入您的 Gemini API Key 以开始创作。<br/>
-              <span className="text-xs">我们不会上传您的密钥，仅存储在本地浏览器中。</span>
+              请选择您的 Gemini API Key (GCP Project) 以开始创作。<br/>
+              <span className="text-xs">
+                需要使用付费项目的 API Key。<br/>
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">查看计费文档</a>
+              </span>
             </p>
             
             <div className="flex flex-col gap-4">
-              <input 
-                type="password" 
-                placeholder="在此粘贴 API Key..." 
-                className="w-full p-4 border-2 border-chiikawa-blue/30 rounded-xl outline-none focus:border-chiikawa-pink transition-colors text-center"
-                value={tempApiKey}
-                onChange={(e) => setTempApiKey(e.target.value)}
-              />
-              <Button onClick={handleSaveKey} disabled={!tempApiKey.trim()} className="w-full justify-center">
-                开始使用 <ArrowRight size={18} />
+              <Button onClick={handleSelectKey} className="w-full justify-center">
+                选择 API Key <Key size={18} />
               </Button>
-            </div>
-
-            <div className="mt-6 text-xs text-gray-400">
-               还没有 Key? <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline hover:text-chiikawa-pink">在此获取 Gemini API Key</a>
             </div>
          </div>
       </div>
@@ -293,11 +322,11 @@ const App: React.FC = () => {
                 Gemini 3 Pro
              </div>
              <button 
-               onClick={handleClearKey}
-               className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-               title="移除 API Key"
+               onClick={handleSelectKey}
+               className="p-2 text-gray-400 hover:text-chiikawa-blue transition-colors"
+               title="切换 API Key"
              >
-               <LogOut size={20} />
+               <Key size={20} />
              </button>
           </div>
         </div>
@@ -308,10 +337,10 @@ const App: React.FC = () => {
         {/* Intro */}
         <div className="text-center mb-8 max-w-2xl">
           <h2 className="text-4xl font-serif mb-2 text-chiikawa-dark">
-            四格漫画生成器
+            AI 漫画创作
           </h2>
           <p className="text-lg text-gray-500 font-medium">
-            选择角色，描述剧情，让 AI 为你创作专属漫画！
+            选择角色，描述剧情，生成四格漫画或精美海报！
           </p>
         </div>
 
@@ -321,6 +350,17 @@ const App: React.FC = () => {
           <CharacterSelector 
             selectedCharacters={selectedCharacters} 
             onToggle={toggleCharacter} 
+          />
+
+          <OptionSelector
+              title="Layout (排版形式)"
+              icon="layout"
+              options={LAYOUT_OPTIONS}
+              selectedId={layoutId}
+              onSelect={setLayoutId}
+              customValue={customLayout}
+              onCustomChange={setCustomLayout}
+              placeholder="例如：'9格漫画'，'横向两格'..."
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
@@ -375,13 +415,13 @@ const App: React.FC = () => {
             <Button 
               onClick={handleGenerate} 
               isLoading={isGenerating} 
-              disabled={!prompt.trim() || selectedCharacters.length === 0 || (artStyleId === 'custom' && !customArtStyle.trim()) || (storyId === 'custom' && !customStory.trim())}
+              disabled={!prompt.trim() || selectedCharacters.length === 0 || (artStyleId === 'custom' && !customArtStyle.trim()) || (storyId === 'custom' && !customStory.trim()) || (layoutId === 'custom' && !customLayout.trim())}
               className="w-full md:w-auto min-w-[200px] text-lg order-1 md:order-2"
             >
               {isGenerating ? '正在施法...' : (
                 <>
                   <Wand2 size={20} />
-                  生成漫画
+                  生成作品
                 </>
               )}
             </Button>
