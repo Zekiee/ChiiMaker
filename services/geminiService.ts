@@ -75,6 +75,7 @@ export const generateChiikawaStory = async (
         },
       });
     }
+    console.log("fullPrompt", fullPrompt)
     contentParts.push({ text: fullPrompt });
 
     const response = await ai.models.generateContent({
