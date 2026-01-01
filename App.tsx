@@ -8,7 +8,7 @@ import { OptionSelector } from './components/OptionSelector';
 import { Button } from './components/Button';
 import { Wand2, Sparkles, LogOut, ArrowRight, Key } from 'lucide-react';
 
-const APP_VERSION = "1.3.6";
+const APP_VERSION = "1.3.7";
 
 // --- Configuration Data ---
 
@@ -72,6 +72,12 @@ const STORY_FRAMEWORKS = [
     label: '日常搞笑',
     icon: '😆',
     value: `Create a funny, cute, or chaotic story following the user's scenario. It should have a clear beginning, middle, and a punchline/conclusion.`
+  },
+  {
+    id: 'no_story',
+    label: '不需要故事',
+    icon: '📷',
+    value: `Pure visual representation. Do not create a narrative arc, plot, or sequence of events. Just illustrate the specific scene or character interaction described in the User's Scenario as a standalone moment or snapshot.`
   },
   {
     id: 'wholesome',
